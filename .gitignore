@@ -1,0 +1,40 @@
+# Python virtual environment
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Environment variables & secrets
+.env
+*.env
+*.local.env
+
+# Study Guides & Architecture Internal Notes
+docs/study_guide/
+docs/architecture/
+
+# Logs and runtime artifacts
+*.log
+logs/
+locust_report.html
+.locust/
+
+# Editor & OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace

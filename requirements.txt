@@ -1,0 +1,25 @@
+# Core Gateway & Async I/O
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+pydantic>=2.6.0
+pydantic-settings>=2.2.0
+httpx>=0.27.0
+aiohttp>=3.9.3
+pyyaml>=6.0.1
+
+# Redis & Distributed Caching
+redis[hiredis]>=5.0.3
+
+# Local Embeddings & Vector Search (Semantic Cache)
+numpy>=1.26.0
+sentence-transformers>=2.5.0
+
+# Observability & Telemetry
+prometheus-client>=0.20.0
+python-json-logger>=2.0.7
+
+# Testing & Load Testing
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+pytest-cov>=4.1.0
+locust>=2.24.0

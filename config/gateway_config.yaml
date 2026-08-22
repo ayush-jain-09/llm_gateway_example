@@ -1,0 +1,142 @@
+# ====================================================================
+# UNIFIED LLM GATEWAY CONFIGURATION
+# Allows seamless switching between all implemented LLD/HLD algorithms
+# ====================================================================
+
+gateway:
+  host: "0.0.0.0"
+  port: 8000
+  log_level: "INFO"
+  enable_prometheus: true
+
+# --------------------------------------------------------------------
+# 1. RATE LIMITER CONFIGURATION
+# Options for strategy:
+#   - "token_bucket": Handcrafted in-memory Token Bucket with thread safety
+#   - "sliding_window_log": Precise timestamp log rate limiter
+#   - "sliding_window_counter": Low-memory hybrid sliding counter
+#   - "redis_token_bucket": Distributed atomic Redis Lua rate limiter
+# --------------------------------------------------------------------
+rate_limiter:
+  strategy: "token_bucket"
+  default_capacity: 10          # Max burst allowed
+  default_refill_rate: 2.0      # Tokens added per second
+  sliding_window_seconds: 60    # For sliding window algorithms
+  redis:
+    url: "redis://localhost:6379/0"
+    key_prefix: "llm_gw:rate_limit:"
+
+# --------------------------------------------------------------------
+# 2. CACHING CONFIGURATION
+# Options for strategy:
+#   - "disabled": Bypass caching
+#   - "lru_exact": Handcrafted Doubly-Linked List + Hash Map LRU cache
+#   - "lfu_exact": Handcrafted Frequency Buckets + Hash Map LFU cache
+#   - "semantic_vector": Vector embedding cosine similarity + LRU eviction
+# --------------------------------------------------------------------
+cache:
+  strategy: "semantic_vector"
+  max_size: 1000                # Maximum cached entries before eviction
+  ttl_seconds: 3600             # Time-to-live per cache entry
+  similarity_threshold: 0.75    # Cosine similarity cutoff (0.75-0.90 recommended)
+  embedding_model: "all-MiniLM-L6-v2" # Lightweight local model (~80MB)
+
+# --------------------------------------------------------------------
+# 3. ROUTER / LOAD BALANCER CONFIGURATION
+# Options for strategy:
+#   - "round_robin": Uniform circular distribution across healthy providers
+#   - "latency_aware_ewma": Routes to provider with lowest Exponential Moving Average latency
+#   - "cost_aware": Optimizes for minimum $/token pricing with SLA fallbacks
+#   - "consistent_hashing": Virtual nodes ring for sticky tenant/user routing
+# --------------------------------------------------------------------
+router:
+  strategy: "latency_aware_ewma"
+  ewma_alpha: 0.2               # Smoothing factor for EWMA latency tracking
+  virtual_nodes_per_provider: 50 # For consistent hashing ring
+
+# --------------------------------------------------------------------
+# 4. CIRCUIT BREAKER CONFIGURATION
+# Applied per-provider to prevent cascading failures
+# Options for strategy:
+#   - "consecutive_failure": Trips after N sequential errors
+#   - "sliding_window_error_rate": Trips if error percentage > threshold in time window
+# --------------------------------------------------------------------
+circuit_breaker:
+  strategy: "sliding_window_error_rate"
+  failure_rate_threshold: 0.5   # 50% errors trips breaker
+  window_size_seconds: 30       # Track error rate over rolling 30s
+  minimum_requests: 5           # Minimum requests in window before evaluating
+  recovery_time_seconds: 15     # How long to stay in OPEN state before testing HALF_OPEN
+  half_open_success_threshold: 3 # Successes required in HALF_OPEN to close circuit
+
+# --------------------------------------------------------------------
+# 5. PROVIDER ADAPTER CONFIGURATIONS
+# Supported: openai, gemini, perplexity, ollama, mock
+# --------------------------------------------------------------------
+providers:
+  - id: "mock-fast"
+    type: "mock"
+    enabled: true
+    model: "mock-fast-model"
+    cost_per_1k_input_tokens: 0.0005
+    cost_per_1k_output_tokens: 0.0015
+    simulated_latency_ms: 50
+    simulated_failure_rate: 0.0
+    timeout_seconds: 5.0
+
+  - id: "mock-slow"
+    type: "mock"
+    enabled: true
+    model: "mock-slow-model"
+    cost_per_1k_input_tokens: 0.0001
+    cost_per_1k_output_tokens: 0.0005
+    simulated_latency_ms: 300
+    simulated_failure_rate: 0.0
+    timeout_seconds: 5.0
+
+  - id: "openai-gpt4o-mini"
+    type: "openai"
+    enabled: false
+    api_key_env: "OPENAI_API_KEY"
+    model: "gpt-4o-mini"
+    cost_per_1k_input_tokens: 0.00015
+    cost_per_1k_output_tokens: 0.00060
+    timeout_seconds: 10.0
+
+  - id: "gemini-1.5-flash"
+    type: "gemini"
+    enabled: false
+    api_key_env: "GEMINI_API_KEY"
+    model: "gemini-1.5-flash"
+    cost_per_1k_input_tokens: 0.000075
+    cost_per_1k_output_tokens: 0.00030
+    timeout_seconds: 10.0
+
+  - id: "perplexity-sonar"
+    type: "perplexity"
+    enabled: false
+    api_key_env: "PERPLEXITY_API_KEY"
+    model: "sonar-small-online"
+    cost_per_1k_input_tokens: 0.0002
+    cost_per_1k_output_tokens: 0.0002
+    timeout_seconds: 15.0
+
+  - id: "ollama-local"
+    type: "ollama"
+    enabled: false
+    base_url: "http://localhost:11434"
+    model: "llama3:latest"
+    cost_per_1k_input_tokens: 0.0
+    cost_per_1k_output_tokens: 0.0
+    timeout_seconds: 30.0
+
+# --------------------------------------------------------------------
+# 6. FAILOVER CASCADE ORDER (if primary provider circuit trips open)
+# --------------------------------------------------------------------
+failover_order:
+  - "mock-fast"
+  - "mock-slow"
+  - "gemini-1.5-flash"
+  - "openai-gpt4o-mini"
+  - "perplexity-sonar"
+  - "ollama-local"

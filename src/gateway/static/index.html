@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM Gateway — Control Plane</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fafbfc;
+      --card: #ffffff;
+      --card-hover: #fefefe;
+      --subtle: #f4f6f8;
+      --border: #e5e8eb;
+      --border-hover: #d1d5db;
+      --ring: rgba(79, 70, 229, 0.15);
+
+      --ink: #1a1d23;
+      --ink2: #4b5563;
+      --ink3: #9ca3af;
+
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-pale: #eef2ff;
+
+      --green: #059669;
+      --green-pale: #ecfdf5;
+      --green-ring: #a7f3d0;
+
+      --amber: #d97706;
+      --amber-pale: #fffbeb;
+      --amber-ring: #fde68a;
+
+      --red: #dc2626;
+      --red-pale: #fef2f2;
+      --red-ring: #fecaca;
+
+      --radius: 10px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      padding: 20px 24px 40px;
+    }
+
+    .shell {
+      max-width: 1260px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ---- HEADER ---- */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .logo { display: flex; align-items: center; gap: 10px; }
+
+    .logo-mark {
+      width: 34px; height: 34px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: grid; place-items: center;
+      color: #fff; font-weight: 700; font-size: 17px;
+    }
+
+    .logo h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+    .logo p  { font-size: 11.5px; color: var(--ink3); font-weight: 500; }
+
+    .nav { display: flex; gap: 6px; }
+
+    .nav a {
+      font-size: 12px; font-weight: 500; color: var(--ink2);
+      text-decoration: none; padding: 5px 10px;
+      border: 1px solid var(--border); border-radius: 6px;
+      transition: .15s;
+    }
+    .nav a:hover { background: var(--subtle); color: var(--ink); }
+
+    /* ---- PILL-LABEL ---- */
+    .label {
+      font-size: 11px; font-weight: 600; color: var(--ink3);
+      text-transform: uppercase; letter-spacing: .5px;
+    }
+
+    /* ---- CONFIG BAR ---- */
+    .config-bar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      box-shadow: var(--shadow);
+      display: flex; flex-direction: column; gap: 12px;
+    }
+
+    .config-bar-top {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .config-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .config-row { grid-template-columns: 1fr 1fr; }
+    }
+
+    .field label {
+      display: block; font-size: 12px; font-weight: 600; color: var(--ink);
+      margin-bottom: 5px;
+    }
+
+    .field label .hint {
+      color: var(--ink3); cursor: help; position: relative;
+    }
+
+    .field label .hint:hover::after {
+      content: attr(data-tip);
+      position: absolute; bottom: 140%; left: 50%; transform: translateX(-50%);
+      background: var(--ink); color: #fff; padding: 7px 10px;
+      border-radius: 6px; font-size: 11px; font-weight: 400;
+      width: 210px; white-space: normal; line-height: 1.4;
+      z-index: 50; pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    }
+
+    select {
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+      background: var(--subtle) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239ca3af'/%3E%3C/svg%3E") no-repeat right 10px center;
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 7px 28px 7px 10px;
+      font: 500 12.5px/1.4 'Inter', sans-serif;
+      color: var(--ink); cursor: pointer; outline: none;
+      transition: border-color .15s;
+    }
+    select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--ring); }
+
+    /* ---- BUTTONS ---- */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      font: 600 12px/1 'Inter', sans-serif;
+      border-radius: 6px; cursor: pointer; transition: .15s;
+      border: none; padding: 7px 14px;
+    }
+
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-accent:hover { background: var(--accent-hover); }
+
+    .btn-ghost {
+      background: transparent; color: var(--ink2);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--subtle); color: var(--ink); }
+
+    .btn-send {
+      background: var(--accent); color: #fff;
+      font-size: 13px; padding: 9px 20px; flex: 1;
+    }
+    .btn-send:hover { background: var(--accent-hover); }
+
+    .btn-burst {
+      background: var(--red-pale); color: var(--red);
+      border: 1px solid var(--red-ring);
+      font-size: 13px; padding: 9px 16px;
+    }
+    .btn-burst:hover { background: #fee2e2; }
+
+    /* ---- MAIN GRID ---- */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 16px;
+    }
+    @media (max-width: 960px) { .main-grid { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      display: flex; flex-direction: column; gap: 14px;
+    }
+
+    .panel-head {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    /* ---- PRESETS ---- */
+    .presets { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+    .preset {
+      font: 500 11.5px 'Inter', sans-serif;
+      padding: 4px 9px; border-radius: 5px;
+      background: var(--accent-pale); color: var(--accent);
+      border: 1px solid #c7d2fe; cursor: pointer; transition: .15s;
+    }
+    .preset:hover { background: #dbeafe; border-color: #93c5fd; }
+
+    textarea {
+      width: 100%; height: 76px;
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 12px; resize: vertical;
+      font: 400 13px/1.5 'Inter', sans-serif;
+      color: var(--ink); outline: none; transition: border-color .15s;
+    }
+    textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--ring); }
+
+    .action-row { display: flex; gap: 8px; }
+
+    /* ---- TELEMETRY STRIP ---- */
+    .tele-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+
+    .tele-box {
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 10px; text-align: center;
+    }
+    .tele-label { font-size: 10px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: .4px; }
+    .tele-val { font: 700 15px 'JetBrains Mono', monospace; margin-top: 2px; }
+
+    .c-green  { color: var(--green); }
+    .c-blue   { color: var(--accent); }
+    .c-amber  { color: var(--amber); }
+    .c-red    { color: var(--red); }
+    .c-ink    { color: var(--ink); }
+
+    /* ---- RESPONSE OUTPUT ---- */
+    .output-box {
+      background: var(--subtle);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font: 400 12px/1.6 'JetBrains Mono', monospace;
+      color: var(--ink2);
+      min-height: 100px; max-height: 170px;
+      overflow-y: auto; white-space: pre-wrap;
+    }
+
+    /* ---- CIRCUIT BREAKER ---- */
+    .cb-stack { display: flex; flex-direction: column; gap: 10px; }
+
+    .cb-card {
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px; display: flex; flex-direction: column; gap: 8px;
+    }
+
+    .cb-top { display: flex; justify-content: space-between; align-items: center; }
+
+    .cb-name { font: 600 13px 'JetBrains Mono', monospace; }
+
+    .pill {
+      font: 700 10px 'JetBrains Mono', monospace;
+      padding: 2px 8px; border-radius: 10px;
+    }
+    .pill-closed { background: var(--green-pale); color: var(--green); border: 1px solid var(--green-ring); }
+    .pill-open   { background: var(--red-pale);   color: var(--red);   border: 1px solid var(--red-ring); }
+    .pill-half   { background: var(--amber-pale); color: var(--amber); border: 1px solid var(--amber-ring); }
+
+    .cb-btns { display: flex; gap: 6px; }
+
+    .cb-btn {
+      flex: 1; font: 600 11px 'Inter', sans-serif;
+      padding: 5px 8px; border-radius: 5px; cursor: pointer; transition: .15s;
+    }
+    .cb-trip {
+      background: #fff; color: var(--red);
+      border: 1px solid var(--red-ring);
+    }
+    .cb-trip:hover { background: var(--red-pale); }
+    .cb-reset {
+      background: #fff; color: var(--green);
+      border: 1px solid var(--green-ring);
+    }
+    .cb-reset:hover { background: var(--green-pale); }
+
+    /* ---- FULL-WIDTH LOG ---- */
+    .log-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+      display: flex; flex-direction: column; gap: 10px;
+    }
+
+    .log-box {
+      font: 400 11.5px/1.55 'JetBrains Mono', monospace;
+      color: var(--ink2);
+      background: var(--subtle);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      height: 180px;
+      overflow-y: auto;
+      display: flex; flex-direction: column; gap: 3px;
+    }
+
+    .log-line { display: flex; gap: 8px; align-items: baseline; }
+    .log-ts   { color: var(--ink3); flex-shrink: 0; font-size: 10.5px; }
+    .t-hit    { color: var(--green); font-weight: 600; }
+    .t-miss   { color: var(--accent); font-weight: 600; }
+    .t-throttle { color: var(--red); font-weight: 600; }
+    .t-cb     { color: var(--amber); font-weight: 600; }
+
+    /* ---- GUIDE GRID ---- */
+    .guide-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+      display: flex; flex-direction: column; gap: 14px;
+    }
+
+    .guide-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 860px) { .guide-row { grid-template-columns: 1fr; } }
+
+    .guide-item {
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 14px; display: flex; flex-direction: column; gap: 8px;
+    }
+
+    .guide-item h4 { font-size: 13px; font-weight: 700; color: var(--accent); }
+
+    .steps { display: flex; flex-direction: column; gap: 4px; }
+
+    .step {
+      display: flex; gap: 7px; align-items: baseline;
+      font-size: 12px; color: var(--ink2); line-height: 1.45;
+    }
+
+    .step-n {
+      background: var(--accent); color: #fff;
+      font-size: 9px; font-weight: 700;
+      min-width: 16px; height: 16px;
+      border-radius: 50%; display: grid; place-items: center;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ===== HEADER ===== -->
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-mark">⚡</div>
+      <div>
+        <h1>LLM Gateway</h1>
+        <p>Production-Grade Systems Architecture Playground</p>
+      </div>
+    </div>
+    <div class="nav">
+      <a href="/docs" target="_blank">API Docs</a>
+      <a href="/metrics" target="_blank">Metrics</a>
+      <a href="/health" target="_blank">Health</a>
+    </div>
+  </div>
+
+  <!-- ===== CONFIG BAR ===== -->
+  <div class="config-bar">
+    <div class="config-bar-top">
+      <span class="label">⚙ Strategy Configuration</span>
+      <button class="btn btn-accent" onclick="applyDynamicConfig()">Apply Changes</button>
+    </div>
+    <div class="config-row">
+      <div class="field">
+        <label>Rate Limiter <span class="hint" data-tip="Token Bucket allows bursts up to capacity. Sliding Window Log enforces strict uniform rates. Redis Lua enables distributed consistency.">ⓘ</span></label>
+        <select id="sel-rl">
+          <option value="token_bucket">Token Bucket (Burst)</option>
+          <option value="sliding_window_log">Sliding Window Log (Exact)</option>
+          <option value="sliding_window_counter">Sliding Window Counter</option>
+          <option value="redis_token_bucket">Redis Token Bucket (Distributed)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Cache Engine <span class="hint" data-tip="Semantic Vector matches paraphrased queries via cosine similarity. LRU/LFU provide exact-match with O(1) eviction.">ⓘ</span></label>
+        <select id="sel-cache">
+          <option value="semantic_vector">Semantic Vector (Cosine)</option>
+          <option value="lru_exact">LRU Exact Match</option>
+          <option value="lfu_exact">LFU Exact Match</option>
+          <option value="disabled">Disabled</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Router <span class="hint" data-tip="EWMA steers to lowest-latency provider. Consistent Hashing gives virtual-node stickiness. Cost-Aware optimises $/token.">ⓘ</span></label>
+        <select id="sel-router">
+          <option value="latency_aware_ewma">Latency-Aware EWMA</option>
+          <option value="round_robin">Round Robin</option>
+          <option value="cost_aware">Cost-Aware ($/1k tok)</option>
+          <option value="consistent_hashing">Consistent Hashing</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Circuit Breaker <span class="hint" data-tip="Sliding Window Error Rate prevents intermittent false trips. Consecutive Failures trips after N sequential errors.">ⓘ</span></label>
+        <select id="sel-cb">
+          <option value="sliding_window_error_rate">Sliding Window Error %</option>
+          <option value="consecutive_failure">Consecutive Failures</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MAIN GRID ===== -->
+  <div class="main-grid">
+
+    <!-- LEFT: Playground -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="label">Request Playground</span>
+        <button class="btn btn-ghost" onclick="clearCache()">Purge Cache</button>
+      </div>
+
+      <div class="presets">
+        <span style="font-size:11px;color:var(--ink3);font-weight:600;">Presets</span>
+        <button class="preset" onclick="setPrompt('Explain how Consistent Hashing works in distributed systems.')">Original Query</button>
+        <button class="preset" onclick="setPrompt('Can you explain how consistent hash rings operate in distributed systems?')">Paraphrased (Semantic Hit)</button>
+        <button class="preset" onclick="setPrompt('What is the Big O time complexity of quantum computing algorithms?')">Unique Query</button>
+      </div>
+
+      <textarea id="prompt-input" placeholder="Type an LLM prompt...">Explain how Consistent Hashing works in distributed systems.</textarea>
+
+      <div class="action-row">
+        <button class="btn btn-send" onclick="sendPrompt()">Send Request</button>
+        <button class="btn btn-burst" onclick="triggerBurst()">⚡ 15× Burst</button>
+      </div>
+
+      <div class="tele-strip">
+        <div class="tele-box"><div class="tele-label">Latency</div><div class="tele-val c-blue" id="m-lat">—</div></div>
+        <div class="tele-box"><div class="tele-label">Cache</div><div class="tele-val c-ink" id="m-cache">—</div></div>
+        <div class="tele-box"><div class="tele-label">Provider</div><div class="tele-val c-green" id="m-prov">—</div></div>
+        <div class="tele-box"><div class="tele-label">Status</div><div class="tele-val c-ink" id="m-stat">—</div></div>
+      </div>
+
+      <div class="panel-head"><span class="label">Response</span></div>
+      <div class="output-box" id="resp-out">// Send a request to see the gateway response here…</div>
+    </div>
+
+    <!-- RIGHT: Circuit Breakers -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="label">Circuit Breakers</span>
+        <button class="btn btn-ghost" onclick="resetAllBreakers()">Reset All</button>
+      </div>
+      <div class="cb-stack" id="cb-container"></div>
+    </div>
+  </div>
+
+  <!-- ===== FULL-WIDTH LOG ===== -->
+  <div class="log-panel">
+    <div class="panel-head">
+      <span class="label">Event Stream</span>
+      <button class="btn btn-ghost" onclick="clearLogs()">Clear</button>
+    </div>
+    <div class="log-box" id="log">
+      <div class="log-line"><span class="log-ts">[init]</span><span>Gateway connected — all subsystems operational.</span></div>
+    </div>
+  </div>
+
+  <!-- ===== GUIDE ===== -->
+  <div class="guide-panel">
+    <span class="label">How to Test Each Algorithm</span>
+    <div class="guide-row">
+      <div class="guide-item">
+        <h4>Caching</h4>
+        <div class="steps">
+          <div class="step"><span class="step-n">1</span><span>Send <b>Original Query</b> — observe a <b>cache miss</b> (~50 ms).</span></div>
+          <div class="step"><span class="step-n">2</span><span>Send it again — instant <b>exact hit</b> (&lt;1 ms).</span></div>
+          <div class="step"><span class="step-n">3</span><span>Send <b>Paraphrased</b> — cosine similarity triggers a <b>semantic hit</b>.</span></div>
+        </div>
+      </div>
+      <div class="guide-item">
+        <h4>Rate Limiting</h4>
+        <div class="steps">
+          <div class="step"><span class="step-n">1</span><span>Click <b>15× Burst</b> — bucket allows 10, the rest get <b>429</b>.</span></div>
+          <div class="step"><span class="step-n">2</span><span>Switch to <b>Sliding Window Log</b> in the config bar to see strict timestamp-bounded enforcement.</span></div>
+        </div>
+      </div>
+      <div class="guide-item">
+        <h4>Circuit Breaker & Failover</h4>
+        <div class="steps">
+          <div class="step"><span class="step-n">1</span><span>Click <b>Trip Outage</b> on mock-fast — state flips to <b style="color:var(--red)">OPEN</b>.</span></div>
+          <div class="step"><span class="step-n">2</span><span>Send a request — gateway auto-reroutes to <b>mock-slow</b> with zero downtime.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function log(type, msg) {
+  const el = document.getElementById('log');
+  const d = document.createElement('div');
+  d.className = 'log-line';
+  const t = new Date().toLocaleTimeString('en-GB', {hour12:false});
+  const cls = {HIT:'t-hit',MISS:'t-miss',THROTTLE:'t-throttle',CB:'t-cb',RECONFIG:'t-miss',CACHE:'t-hit',REQ:'t-miss',ERR:'t-throttle'}[type]||'';
+  d.innerHTML = `<span class="log-ts">[${t}]</span><span class="${cls}">[${type}]</span><span>${msg}</span>`;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearLogs(){ document.getElementById('log').innerHTML = ''; }
+function setPrompt(t){ document.getElementById('prompt-input').value = t; }
+
+async function fetchHealth(){
+  try {
+    const r = await fetch('/health');
+    const d = await r.json();
+    if(d.active_rate_limiter) document.getElementById('sel-rl').value = d.active_rate_limiter;
+    if(d.active_cache) document.getElementById('sel-cache').value = d.active_cache;
+    if(d.active_router) document.getElementById('sel-router').value = d.active_router;
+
+    const c = document.getElementById('cb-container');
+    c.innerHTML = '';
+    for(const [pid, state] of Object.entries(d.circuit_breaker_states)){
+      const cls = state==='CLOSED'?'pill-closed':state==='OPEN'?'pill-open':'pill-half';
+      const lat = pid.includes('fast')?'50 ms':'300 ms';
+      c.innerHTML += `
+        <div class="cb-card">
+          <div class="cb-top">
+            <span class="cb-name">${pid} <span style="font-weight:400;color:var(--ink3);font-size:11px">(${lat})</span></span>
+            <span class="pill ${cls}">${state}</span>
+          </div>
+          <div class="cb-btns">
+            <button class="cb-btn cb-trip" onclick="tripBreaker('${pid}')">Trip Outage</button>
+            <button class="cb-btn cb-reset" onclick="resetAllBreakers()">Restore</button>
+          </div>
+        </div>`;
+    }
+  } catch(e){ log('ERR','Health fetch failed: '+e); }
+}
+
+async function applyDynamicConfig(){
+  const body = {
+    rate_limiter_strategy: document.getElementById('sel-rl').value,
+    cache_strategy: document.getElementById('sel-cache').value,
+    router_strategy: document.getElementById('sel-router').value,
+    circuit_breaker_strategy: document.getElementById('sel-cb').value,
+  };
+  try {
+    const r = await fetch('/gateway/reconfigure',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d = await r.json();
+    log('RECONFIG',`Limiter=${d.active_rate_limiter}  Cache=${d.active_cache}  Router=${d.active_router}`);
+    fetchHealth();
+  } catch(e){ log('ERR','Reconfigure failed: '+e); }
+}
+
+async function tripBreaker(pid){
+  log('CB',`Tripping ${pid}…`);
+  try {
+    const r = await fetch(`/gateway/circuit-breaker/trip?provider_id=${pid}`,{method:'POST'});
+    const d = await r.json();
+    log('CB',`${pid} → ${d.new_state}`);
+    fetchHealth();
+  } catch(e){ log('ERR','Trip failed: '+e); }
+}
+
+async function resetAllBreakers(){
+  try {
+    await fetch('/gateway/circuit-breaker/reset',{method:'POST'});
+    log('CB','All breakers reset to CLOSED.');
+    fetchHealth();
+  } catch(e){ log('ERR','Reset failed: '+e); }
+}
+
+async function clearCache(){
+  try { await fetch('/gateway/cache/clear',{method:'POST'}); log('CACHE','Cache purged.'); }
+  catch(e){ log('ERR','Cache clear failed: '+e); }
+}
+
+async function sendPrompt(){
+  const prompt = document.getElementById('prompt-input').value.trim();
+  if(!prompt) return;
+  log('REQ',`"${prompt.substring(0,50)}…"`);
+  const t0 = performance.now();
+  try {
+    const r = await fetch('/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:prompt}],tenant_id:'playground'})});
+    const ms = (performance.now()-t0).toFixed(1);
+    const d = await r.json();
+
+    document.getElementById('m-lat').textContent = ms+' ms';
+    document.getElementById('m-stat').textContent = r.status;
+    document.getElementById('m-stat').className = 'tele-val '+(r.status===200?'c-green':'c-red');
+
+    if(r.status===200){
+      const hit = d.cache_hit;
+      const ct = d.cache_type||'';
+      const ce = document.getElementById('m-cache');
+      if(hit){
+        ce.textContent = 'HIT ('+ct+')'; ce.className='tele-val c-green';
+        document.getElementById('m-lat').className='tele-val c-green';
+        log('HIT',`${ct} in ${ms} ms`);
+      } else {
+        ce.textContent = 'MISS'; ce.className='tele-val c-amber';
+        document.getElementById('m-lat').className='tele-val c-blue';
+        log('MISS',`→ ${d.provider_id} in ${ms} ms`);
+      }
+      document.getElementById('m-prov').textContent = d.provider_id||'cache';
+      document.getElementById('resp-out').textContent = JSON.stringify(d,null,2);
+    } else {
+      document.getElementById('m-cache').textContent='429'; document.getElementById('m-cache').className='tele-val c-red';
+      document.getElementById('resp-out').textContent = JSON.stringify(d,null,2);
+      log('THROTTLE',`HTTP ${r.status}: ${d.detail}`);
+    }
+    fetchHealth();
+  } catch(e){ log('ERR','Network: '+e); }
+}
+
+async function triggerBurst(){
+  log('THROTTLE','Firing 15 concurrent requests…');
+  let ok=0, fail=0;
+  const promises = [];
+  for(let i=0;i<15;i++){
+    promises.push(
+      fetch('/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:'burst '+i}],tenant_id:'burst',cache_bypass:true})})
+      .then(r=>{ if(r.status===200) ok++; else fail++; })
+    );
+  }
+  await Promise.allSettled(promises);
+  document.getElementById('m-stat').textContent = `${ok} ok / ${fail} 429`;
+  log('THROTTLE',`Done: ${ok} passed, ${fail} throttled.`);
+}
+
+resetAllBreakers();
+</script>
+</body>
+</html>

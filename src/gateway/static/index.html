@@ -6,507 +6,665 @@
   <title>LLM Gateway — Control Plane</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #fafbfc;
-      --card: #ffffff;
-      --card-hover: #fefefe;
-      --subtle: #f4f6f8;
-      --border: #e5e8eb;
-      --border-hover: #d1d5db;
-      --ring: rgba(79, 70, 229, 0.15);
+      --bg:          #0d1117;
+      --surface:     #161b22;
+      --surface2:    #1c2330;
+      --surface3:    #21282f;
+      --border:      #2a3441;
+      --border2:     #344055;
 
-      --ink: #1a1d23;
-      --ink2: #4b5563;
-      --ink3: #9ca3af;
+      --ink:         #e6edf3;
+      --ink2:        #8b949e;
+      --ink3:        #484f58;
 
-      --accent: #4f46e5;
-      --accent-hover: #4338ca;
-      --accent-pale: #eef2ff;
+      --teal:        #2dd4bf;
+      --teal-dim:    #0d3d38;
+      --teal-ring:   rgba(45,212,191,0.18);
+      --teal-glow:   rgba(45,212,191,0.08);
 
-      --green: #059669;
-      --green-pale: #ecfdf5;
-      --green-ring: #a7f3d0;
+      --emerald:     #34d399;
+      --emerald-dim: #0a3728;
 
-      --amber: #d97706;
-      --amber-pale: #fffbeb;
-      --amber-ring: #fde68a;
+      --rose:        #f87171;
+      --rose-dim:    #3d1212;
+      --rose-ring:   rgba(248,113,113,0.2);
 
-      --red: #dc2626;
-      --red-pale: #fef2f2;
-      --red-ring: #fecaca;
+      --amber:       #fbbf24;
+      --amber-dim:   #3d2c07;
 
-      --radius: 10px;
-      --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+      --sky:         #38bdf8;
+      --sky-dim:     #0c2d44;
+
+      --radius:      10px;
+      --radius-sm:   6px;
+      --shadow:      0 0 0 1px var(--border);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       background: var(--bg);
       color: var(--ink);
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-family: 'Sora', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
       min-height: 100vh;
-      padding: 20px 24px 40px;
+      padding: 18px 20px 48px;
     }
 
     .shell {
-      max-width: 1260px;
+      max-width: 1320px;
       margin: 0 auto;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
     }
 
-    /* ---- HEADER ---- */
+    /* ─── TOPBAR ─── */
     .topbar {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      padding: 14px 20px;
-      background: var(--card);
+      justify-content: space-between;
+      padding: 12px 18px;
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      box-shadow: var(--shadow);
     }
 
-    .logo { display: flex; align-items: center; gap: 10px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
 
-    .logo-mark {
-      width: 34px; height: 34px;
-      background: var(--accent);
+    .brand-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--teal) 0%, #0891b2 100%);
       border-radius: 8px;
       display: grid; place-items: center;
-      color: #fff; font-weight: 700; font-size: 17px;
+      font-size: 18px;
+      box-shadow: 0 0 16px var(--teal-ring);
     }
 
-    .logo h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
-    .logo p  { font-size: 11.5px; color: var(--ink3); font-weight: 500; }
+    .brand-text h1 {
+      font-size: 15px; font-weight: 700;
+      color: var(--ink); letter-spacing: -0.2px;
+    }
+    .brand-text p {
+      font-size: 11px; color: var(--ink2); margin-top: 1px;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+    .status-dot {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-family: 'IBM Plex Mono', monospace;
+      color: var(--emerald);
+    }
+    .status-dot::before {
+      content: '';
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 8px var(--emerald);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
 
     .nav { display: flex; gap: 6px; }
-
     .nav a {
-      font-size: 12px; font-weight: 500; color: var(--ink2);
-      text-decoration: none; padding: 5px 10px;
-      border: 1px solid var(--border); border-radius: 6px;
-      transition: .15s;
+      font-size: 11.5px; font-weight: 500;
+      color: var(--ink2); text-decoration: none;
+      padding: 5px 11px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      transition: .15s; font-family: 'IBM Plex Mono', monospace;
     }
-    .nav a:hover { background: var(--subtle); color: var(--ink); }
+    .nav a:hover { color: var(--teal); border-color: var(--teal); background: var(--teal-glow); }
 
-    /* ---- PILL-LABEL ---- */
-    .label {
-      font-size: 11px; font-weight: 600; color: var(--ink3);
-      text-transform: uppercase; letter-spacing: .5px;
+    /* ─── SECTION LABEL ─── */
+    .sec-label {
+      font-size: 10.5px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .8px;
+      color: var(--ink3);
+      font-family: 'IBM Plex Mono', monospace;
     }
 
-    /* ---- CONFIG BAR ---- */
+    /* ─── CONFIG BAR ─── */
     .config-bar {
-      background: var(--card);
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 14px 18px;
-      box-shadow: var(--shadow);
-      display: flex; flex-direction: column; gap: 12px;
+      padding: 16px 18px;
+      display: flex; flex-direction: column; gap: 14px;
     }
 
-    .config-bar-top {
+    .config-bar-head {
       display: flex; justify-content: space-between; align-items: center;
     }
 
-    .config-row {
+    .config-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 12px;
     }
+    @media (max-width: 900px) { .config-grid { grid-template-columns: 1fr 1fr; } }
 
-    @media (max-width: 900px) {
-      .config-row { grid-template-columns: 1fr 1fr; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+
+    .field-label {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11.5px; font-weight: 600; color: var(--ink2);
     }
 
-    .field label {
-      display: block; font-size: 12px; font-weight: 600; color: var(--ink);
-      margin-bottom: 5px;
+    .tip-icon {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--surface3); border: 1px solid var(--border2);
+      display: grid; place-items: center;
+      font-size: 9px; color: var(--ink3);
+      cursor: help; position: relative;
     }
-
-    .field label .hint {
-      color: var(--ink3); cursor: help; position: relative;
-    }
-
-    .field label .hint:hover::after {
+    .tip-icon:hover::after {
       content: attr(data-tip);
-      position: absolute; bottom: 140%; left: 50%; transform: translateX(-50%);
-      background: var(--ink); color: #fff; padding: 7px 10px;
-      border-radius: 6px; font-size: 11px; font-weight: 400;
-      width: 210px; white-space: normal; line-height: 1.4;
-      z-index: 50; pointer-events: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,.15);
+      position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%);
+      background: var(--surface2); color: var(--ink);
+      border: 1px solid var(--border2);
+      padding: 8px 10px; border-radius: 7px;
+      font-size: 11px; font-weight: 400; line-height: 1.5;
+      width: 220px; white-space: normal;
+      z-index: 99; pointer-events: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,.5);
+      font-family: 'Sora', sans-serif;
     }
 
     select {
-      width: 100%;
-      appearance: none;
-      -webkit-appearance: none;
-      background: var(--subtle) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239ca3af'/%3E%3C/svg%3E") no-repeat right 10px center;
-      border: 1px solid var(--border); border-radius: 6px;
-      padding: 7px 28px 7px 10px;
-      font: 500 12.5px/1.4 'Inter', sans-serif;
+      appearance: none; -webkit-appearance: none;
+      background: var(--surface2)
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23484f58'/%3E%3C/svg%3E")
+        no-repeat right 10px center;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 28px 8px 11px;
+      font: 500 12px 'IBM Plex Mono', monospace;
       color: var(--ink); cursor: pointer; outline: none;
-      transition: border-color .15s;
+      transition: border-color .15s, box-shadow .15s;
+      width: 100%;
     }
-    select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--ring); }
+    select:focus { border-color: var(--teal); box-shadow: 0 0 0 2px var(--teal-ring); }
 
-    /* ---- BUTTONS ---- */
+    /* ─── BUTTONS ─── */
     .btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      font: 600 12px/1 'Inter', sans-serif;
-      border-radius: 6px; cursor: pointer; transition: .15s;
-      border: none; padding: 7px 14px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+      font: 600 12px 'Sora', sans-serif;
+      border-radius: var(--radius-sm); cursor: pointer;
+      transition: .15s; border: none; padding: 7px 14px;
     }
-
-    .btn-accent { background: var(--accent); color: #fff; }
-    .btn-accent:hover { background: var(--accent-hover); }
+    .btn-teal {
+      background: var(--teal); color: #0d1117;
+    }
+    .btn-teal:hover { background: #5eead4; }
 
     .btn-ghost {
       background: transparent; color: var(--ink2);
       border: 1px solid var(--border);
     }
-    .btn-ghost:hover { background: var(--subtle); color: var(--ink); }
+    .btn-ghost:hover { border-color: var(--border2); color: var(--ink); }
 
-    .btn-send {
-      background: var(--accent); color: #fff;
-      font-size: 13px; padding: 9px 20px; flex: 1;
+    .btn-rose {
+      background: var(--rose-dim); color: var(--rose);
+      border: 1px solid rgba(248,113,113,0.25);
+      font-size: 12.5px; padding: 9px 16px;
     }
-    .btn-send:hover { background: var(--accent-hover); }
+    .btn-rose:hover { background: #4d1a1a; }
 
-    .btn-burst {
-      background: var(--red-pale); color: var(--red);
-      border: 1px solid var(--red-ring);
-      font-size: 13px; padding: 9px 16px;
+    .btn-primary {
+      background: var(--teal); color: #0d1117;
+      font-size: 13px; padding: 9px 22px; flex: 1;
     }
-    .btn-burst:hover { background: #fee2e2; }
+    .btn-primary:hover { background: #5eead4; }
 
-    /* ---- MAIN GRID ---- */
+    /* ─── THREE-COLUMN MAIN LAYOUT ─── */
     .main-grid {
       display: grid;
-      grid-template-columns: 1fr 340px;
-      gap: 16px;
+      grid-template-columns: 1fr 1fr 300px;
+      gap: 14px;
     }
-    @media (max-width: 960px) { .main-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 1100px) { .main-grid { grid-template-columns: 1fr 300px; } }
+    @media (max-width: 760px)  { .main-grid { grid-template-columns: 1fr; } }
 
-    .panel {
-      background: var(--card);
+    .card {
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 18px;
-      box-shadow: var(--shadow);
-      display: flex; flex-direction: column; gap: 14px;
+      padding: 16px;
+      display: flex; flex-direction: column; gap: 12px;
     }
 
-    .panel-head {
+    .card-head {
       display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
     }
 
-    /* ---- PRESETS ---- */
-    .presets { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    /* ─── PRESETS ─── */
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; }
 
     .preset {
-      font: 500 11.5px 'Inter', sans-serif;
-      padding: 4px 9px; border-radius: 5px;
-      background: var(--accent-pale); color: var(--accent);
-      border: 1px solid #c7d2fe; cursor: pointer; transition: .15s;
+      font: 500 11px 'IBM Plex Mono', monospace;
+      padding: 4px 10px; border-radius: 20px;
+      background: var(--surface3); color: var(--teal);
+      border: 1px solid var(--teal-dim); cursor: pointer;
+      transition: .15s;
     }
-    .preset:hover { background: #dbeafe; border-color: #93c5fd; }
+    .preset:hover { background: var(--teal-dim); border-color: var(--teal); }
 
     textarea {
-      width: 100%; height: 76px;
+      width: 100%;
+      background: var(--surface2); color: var(--ink);
       border: 1px solid var(--border); border-radius: 8px;
-      padding: 10px 12px; resize: vertical;
-      font: 400 13px/1.5 'Inter', sans-serif;
-      color: var(--ink); outline: none; transition: border-color .15s;
+      padding: 11px 13px; resize: vertical;
+      font: 400 12.5px/1.55 'IBM Plex Mono', monospace;
+      outline: none; transition: border-color .15s;
+      min-height: 80px;
     }
-    textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--ring); }
+    textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 2px var(--teal-ring); }
+    textarea::placeholder { color: var(--ink3); }
 
     .action-row { display: flex; gap: 8px; }
 
-    /* ---- TELEMETRY STRIP ---- */
-    .tele-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
-
-    .tele-box {
-      border: 1px solid var(--border); border-radius: 8px;
-      padding: 8px 10px; text-align: center;
+    /* ─── TELEMETRY STRIP ─── */
+    .tele-row {
+      display: grid; grid-template-columns: repeat(4,1fr); gap: 8px;
     }
-    .tele-label { font-size: 10px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: .4px; }
-    .tele-val { font: 700 15px 'JetBrains Mono', monospace; margin-top: 2px; }
 
-    .c-green  { color: var(--green); }
-    .c-blue   { color: var(--accent); }
-    .c-amber  { color: var(--amber); }
-    .c-red    { color: var(--red); }
-    .c-ink    { color: var(--ink); }
+    .tele-cell {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px 10px; text-align: center;
+    }
+    .tele-cell-label {
+      font: 600 9.5px 'IBM Plex Mono', monospace;
+      text-transform: uppercase; letter-spacing: .5px; color: var(--ink3);
+    }
+    .tele-cell-val {
+      font: 700 14px 'IBM Plex Mono', monospace;
+      margin-top: 3px;
+    }
 
-    /* ---- RESPONSE OUTPUT ---- */
+    /* ─── OUTPUT BOX ─── */
     .output-box {
-      background: var(--subtle);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 14px;
-      font: 400 12px/1.6 'JetBrains Mono', monospace;
-      color: var(--ink2);
-      min-height: 100px; max-height: 170px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 14px;
+      font: 400 11.5px/1.6 'IBM Plex Mono', monospace;
+      color: var(--ink2); min-height: 110px; max-height: 160px;
       overflow-y: auto; white-space: pre-wrap;
     }
 
-    /* ---- CIRCUIT BREAKER ---- */
-    .cb-stack { display: flex; flex-direction: column; gap: 10px; }
+    /* ─── METRICS CARD (middle column) ─── */
+    .metric-list { display: flex; flex-direction: column; gap: 8px; }
 
-    .cb-card {
-      border: 1px solid var(--border); border-radius: 8px;
-      padding: 12px; display: flex; flex-direction: column; gap: 8px;
+    .metric-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 12px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .metric-key {
+      font: 500 11.5px 'IBM Plex Mono', monospace; color: var(--ink2);
+    }
+    .metric-val {
+      font: 700 12px 'IBM Plex Mono', monospace;
     }
 
-    .cb-top { display: flex; justify-content: space-between; align-items: center; }
+    .algo-tag {
+      font: 600 10px 'IBM Plex Mono', monospace;
+      padding: 2px 8px; border-radius: 20px;
+    }
+    .tag-teal   { background: var(--teal-dim);    color: var(--teal);    border: 1px solid rgba(45,212,191,.25); }
+    .tag-sky    { background: var(--sky-dim);     color: var(--sky);     border: 1px solid rgba(56,189,248,.25); }
+    .tag-amber  { background: var(--amber-dim);   color: var(--amber);   border: 1px solid rgba(251,191,36,.25); }
+    .tag-emerald{ background: var(--emerald-dim); color: var(--emerald); border: 1px solid rgba(52,211,153,.25); }
 
-    .cb-name { font: 600 13px 'JetBrains Mono', monospace; }
+    /* ─── CIRCUIT BREAKER CARD ─── */
+    .cb-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .cb-item {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .cb-item-head {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .cb-item-name {
+      font: 600 12px 'IBM Plex Mono', monospace; color: var(--ink);
+    }
+    .cb-item-sub {
+      font: 400 10px 'IBM Plex Mono', monospace; color: var(--ink3);
+      margin-top: 1px;
+    }
 
     .pill {
-      font: 700 10px 'JetBrains Mono', monospace;
-      padding: 2px 8px; border-radius: 10px;
+      font: 700 9.5px 'IBM Plex Mono', monospace;
+      padding: 2px 8px; border-radius: 20px; letter-spacing: .3px;
     }
-    .pill-closed { background: var(--green-pale); color: var(--green); border: 1px solid var(--green-ring); }
-    .pill-open   { background: var(--red-pale);   color: var(--red);   border: 1px solid var(--red-ring); }
-    .pill-half   { background: var(--amber-pale); color: var(--amber); border: 1px solid var(--amber-ring); }
+    .pill-closed { background: var(--emerald-dim); color: var(--emerald); border: 1px solid rgba(52,211,153,.3); }
+    .pill-open   { background: var(--rose-dim);    color: var(--rose);    border: 1px solid rgba(248,113,113,.3); }
+    .pill-half   { background: var(--amber-dim);   color: var(--amber);   border: 1px solid rgba(251,191,36,.3); }
 
-    .cb-btns { display: flex; gap: 6px; }
-
+    .cb-actions { display: flex; gap: 6px; }
     .cb-btn {
-      flex: 1; font: 600 11px 'Inter', sans-serif;
+      flex: 1; font: 600 10.5px 'Sora', sans-serif;
       padding: 5px 8px; border-radius: 5px; cursor: pointer; transition: .15s;
     }
     .cb-trip {
-      background: #fff; color: var(--red);
-      border: 1px solid var(--red-ring);
+      background: var(--rose-dim); color: var(--rose);
+      border: 1px solid rgba(248,113,113,.25);
     }
-    .cb-trip:hover { background: var(--red-pale); }
-    .cb-reset {
-      background: #fff; color: var(--green);
-      border: 1px solid var(--green-ring);
+    .cb-trip:hover { background: #4d1a1a; }
+    .cb-restore {
+      background: var(--emerald-dim); color: var(--emerald);
+      border: 1px solid rgba(52,211,153,.25);
     }
-    .cb-reset:hover { background: var(--green-pale); }
+    .cb-restore:hover { background: #0e4a37; }
 
-    /* ---- FULL-WIDTH LOG ---- */
-    .log-panel {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px 18px;
-      box-shadow: var(--shadow);
+    /* ─── BOTTOM ROW ─── */
+    .bottom-row {
+      display: grid; grid-template-columns: 1fr 380px; gap: 14px;
+    }
+    @media (max-width: 900px) { .bottom-row { grid-template-columns: 1fr; } }
+
+    /* ─── EVENT LOG ─── */
+    .log-box {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px;
+      font: 400 11px 'IBM Plex Mono', monospace;
+      height: 196px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .log-line { display: flex; gap: 8px; align-items: baseline; line-height: 1.55; }
+    .log-ts   { color: var(--ink3); flex-shrink: 0; font-size: 10px; }
+    .log-tag  { flex-shrink: 0; font-size: 10px; font-weight: 700; }
+    .log-msg  { color: var(--ink2); }
+    .t-hit      { color: var(--emerald); }
+    .t-miss     { color: var(--sky); }
+    .t-throttle { color: var(--rose); }
+    .t-cb       { color: var(--amber); }
+    .t-cfg      { color: var(--teal); }
+    .t-err      { color: var(--rose); }
+    .t-info     { color: var(--ink3); }
+
+    /* ─── GUIDE ─── */
+    .guide-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    }
+    @media (max-width: 780px) { .guide-grid { grid-template-columns: 1fr; } }
+
+    .guide-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px;
       display: flex; flex-direction: column; gap: 10px;
     }
-
-    .log-box {
-      font: 400 11.5px/1.55 'JetBrains Mono', monospace;
-      color: var(--ink2);
-      background: var(--subtle);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 14px;
-      height: 180px;
-      overflow-y: auto;
-      display: flex; flex-direction: column; gap: 3px;
+    .guide-card-title {
+      font: 700 12.5px 'Sora', sans-serif; color: var(--teal);
+      display: flex; align-items: center; gap: 7px;
     }
-
-    .log-line { display: flex; gap: 8px; align-items: baseline; }
-    .log-ts   { color: var(--ink3); flex-shrink: 0; font-size: 10.5px; }
-    .t-hit    { color: var(--green); font-weight: 600; }
-    .t-miss   { color: var(--accent); font-weight: 600; }
-    .t-throttle { color: var(--red); font-weight: 600; }
-    .t-cb     { color: var(--amber); font-weight: 600; }
-
-    /* ---- GUIDE GRID ---- */
-    .guide-panel {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px 20px;
-      box-shadow: var(--shadow);
-      display: flex; flex-direction: column; gap: 14px;
-    }
-
-    .guide-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-    }
-    @media (max-width: 860px) { .guide-row { grid-template-columns: 1fr; } }
-
-    .guide-item {
-      border: 1px solid var(--border); border-radius: 8px;
-      padding: 14px; display: flex; flex-direction: column; gap: 8px;
-    }
-
-    .guide-item h4 { font-size: 13px; font-weight: 700; color: var(--accent); }
-
-    .steps { display: flex; flex-direction: column; gap: 4px; }
-
-    .step {
-      display: flex; gap: 7px; align-items: baseline;
-      font-size: 12px; color: var(--ink2); line-height: 1.45;
-    }
-
+    .guide-card-title span { font-size: 15px; }
+    .steps { display: flex; flex-direction: column; gap: 6px; }
+    .step { display: flex; gap: 8px; align-items: flex-start; }
     .step-n {
-      background: var(--accent); color: #fff;
-      font-size: 9px; font-weight: 700;
-      min-width: 16px; height: 16px;
-      border-radius: 50%; display: grid; place-items: center;
-      flex-shrink: 0;
+      background: var(--teal); color: #0d1117;
+      font: 700 9px 'IBM Plex Mono', monospace;
+      min-width: 17px; height: 17px; border-radius: 50%;
+      display: grid; place-items: center; flex-shrink: 0; margin-top: 1px;
     }
+    .step-text { font: 400 11.5px 'Sora', sans-serif; color: var(--ink2); line-height: 1.5; }
+    .step-text b { color: var(--ink); font-weight: 600; }
+
+    /* ─── COLOURS ─── */
+    .c-teal    { color: var(--teal); }
+    .c-emerald { color: var(--emerald); }
+    .c-rose    { color: var(--rose); }
+    .c-amber   { color: var(--amber); }
+    .c-sky     { color: var(--sky); }
+    .c-ink2    { color: var(--ink2); }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
   </style>
 </head>
 <body>
 <div class="shell">
 
-  <!-- ===== HEADER ===== -->
+  <!-- ═══ TOPBAR ═══ -->
   <div class="topbar">
-    <div class="logo">
-      <div class="logo-mark">⚡</div>
-      <div>
+    <div class="brand">
+      <div class="brand-icon">⟁</div>
+      <div class="brand-text">
         <h1>LLM Gateway</h1>
-        <p>Production-Grade Systems Architecture Playground</p>
+        <p>distributed systems control plane</p>
       </div>
     </div>
-    <div class="nav">
-      <a href="/docs" target="_blank">API Docs</a>
-      <a href="/metrics" target="_blank">Metrics</a>
-      <a href="/health" target="_blank">Health</a>
+    <div class="topbar-right">
+      <div class="status-dot" id="status-text">connected</div>
+      <div class="nav">
+        <a href="/docs" target="_blank">swagger</a>
+        <a href="/metrics" target="_blank">metrics</a>
+        <a href="/health" target="_blank">health</a>
+      </div>
     </div>
   </div>
 
-  <!-- ===== CONFIG BAR ===== -->
+  <!-- ═══ CONFIG BAR ═══ -->
   <div class="config-bar">
-    <div class="config-bar-top">
-      <span class="label">⚙ Strategy Configuration</span>
-      <button class="btn btn-accent" onclick="applyDynamicConfig()">Apply Changes</button>
+    <div class="config-bar-head">
+      <span class="sec-label">// algorithm configuration</span>
+      <button class="btn btn-teal" onclick="applyDynamicConfig()">↻ Apply Config</button>
     </div>
-    <div class="config-row">
+    <div class="config-grid">
       <div class="field">
-        <label>Rate Limiter <span class="hint" data-tip="Token Bucket allows bursts up to capacity. Sliding Window Log enforces strict uniform rates. Redis Lua enables distributed consistency.">ⓘ</span></label>
+        <div class="field-label">
+          Rate Limiter
+          <div class="tip-icon" data-tip="Token Bucket allows bursts up to capacity then refills at a fixed rate. Sliding Window Log is exact but memory-heavy. Redis Lua script is atomic across distributed instances.">?</div>
+        </div>
         <select id="sel-rl">
-          <option value="token_bucket">Token Bucket (Burst)</option>
-          <option value="sliding_window_log">Sliding Window Log (Exact)</option>
+          <option value="token_bucket">Token Bucket</option>
+          <option value="sliding_window_log">Sliding Window Log</option>
           <option value="sliding_window_counter">Sliding Window Counter</option>
-          <option value="redis_token_bucket">Redis Token Bucket (Distributed)</option>
+          <option value="redis_token_bucket">Redis Token Bucket</option>
         </select>
       </div>
       <div class="field">
-        <label>Cache Engine <span class="hint" data-tip="Semantic Vector matches paraphrased queries via cosine similarity. LRU/LFU provide exact-match with O(1) eviction.">ⓘ</span></label>
+        <div class="field-label">
+          Cache Engine
+          <div class="tip-icon" data-tip="Semantic Vector cache embeds prompts into 384-dim vectors and matches by cosine similarity. LRU uses doubly-linked list + hashmap. LFU uses frequency buckets — all O(1).">?</div>
+        </div>
         <select id="sel-cache">
-          <option value="semantic_vector">Semantic Vector (Cosine)</option>
-          <option value="lru_exact">LRU Exact Match</option>
-          <option value="lfu_exact">LFU Exact Match</option>
+          <option value="semantic_vector">Semantic Vector</option>
+          <option value="lru_exact">LRU Exact</option>
+          <option value="lfu_exact">LFU Exact</option>
           <option value="disabled">Disabled</option>
         </select>
       </div>
       <div class="field">
-        <label>Router <span class="hint" data-tip="EWMA steers to lowest-latency provider. Consistent Hashing gives virtual-node stickiness. Cost-Aware optimises $/token.">ⓘ</span></label>
+        <div class="field-label">
+          Router
+          <div class="tip-icon" data-tip="EWMA router tracks exponentially-smoothed latency and routes to the fastest provider. Consistent Hashing uses a virtual-node ring for sticky sessions. Cost-Aware picks lowest $/token.">?</div>
+        </div>
         <select id="sel-router">
           <option value="latency_aware_ewma">Latency-Aware EWMA</option>
           <option value="round_robin">Round Robin</option>
-          <option value="cost_aware">Cost-Aware ($/1k tok)</option>
+          <option value="cost_aware">Cost Aware</option>
           <option value="consistent_hashing">Consistent Hashing</option>
         </select>
       </div>
       <div class="field">
-        <label>Circuit Breaker <span class="hint" data-tip="Sliding Window Error Rate prevents intermittent false trips. Consecutive Failures trips after N sequential errors.">ⓘ</span></label>
+        <div class="field-label">
+          Circuit Breaker
+          <div class="tip-icon" data-tip="Sliding Window Error Rate trips when error % exceeds threshold in a rolling window. Consecutive Failure trips after N sequential errors. Both support CLOSED → OPEN → HALF_OPEN recovery.">?</div>
+        </div>
         <select id="sel-cb">
           <option value="sliding_window_error_rate">Sliding Window Error %</option>
-          <option value="consecutive_failure">Consecutive Failures</option>
+          <option value="consecutive_failure">Consecutive Failure</option>
         </select>
       </div>
     </div>
   </div>
 
-  <!-- ===== MAIN GRID ===== -->
+  <!-- ═══ THREE-COLUMN MAIN ═══ -->
   <div class="main-grid">
 
     <!-- LEFT: Playground -->
-    <div class="panel">
-      <div class="panel-head">
-        <span class="label">Request Playground</span>
-        <button class="btn btn-ghost" onclick="clearCache()">Purge Cache</button>
+    <div class="card">
+      <div class="card-head">
+        <span class="sec-label">// request playground</span>
+        <button class="btn btn-ghost" onclick="clearCache()">purge cache</button>
       </div>
 
-      <div class="presets">
-        <span style="font-size:11px;color:var(--ink3);font-weight:600;">Presets</span>
-        <button class="preset" onclick="setPrompt('Explain how Consistent Hashing works in distributed systems.')">Original Query</button>
-        <button class="preset" onclick="setPrompt('Can you explain how consistent hash rings operate in distributed systems?')">Paraphrased (Semantic Hit)</button>
-        <button class="preset" onclick="setPrompt('What is the Big O time complexity of quantum computing algorithms?')">Unique Query</button>
+      <div>
+        <div class="sec-label" style="margin-bottom:7px;">prompt presets</div>
+        <div class="presets">
+          <button class="preset" onclick="setPrompt('Explain how Consistent Hashing works in distributed systems.')">consistent hashing</button>
+          <button class="preset" onclick="setPrompt('Can you explain how consistent hash rings operate in distributed systems?')">paraphrase → semantic hit</button>
+          <button class="preset" onclick="setPrompt('What is the Big O complexity of merge sort and why?')">unique query</button>
+        </div>
       </div>
 
-      <textarea id="prompt-input" placeholder="Type an LLM prompt...">Explain how Consistent Hashing works in distributed systems.</textarea>
+      <textarea id="prompt-input" placeholder="Enter a prompt and fire it through the gateway pipeline…">Explain how Consistent Hashing works in distributed systems.</textarea>
 
       <div class="action-row">
-        <button class="btn btn-send" onclick="sendPrompt()">Send Request</button>
-        <button class="btn btn-burst" onclick="triggerBurst()">⚡ 15× Burst</button>
+        <button class="btn btn-primary" onclick="sendPrompt()">▶ Send Request</button>
+        <button class="btn btn-rose" onclick="triggerBurst()">⚡ Burst ×15</button>
       </div>
 
-      <div class="tele-strip">
-        <div class="tele-box"><div class="tele-label">Latency</div><div class="tele-val c-blue" id="m-lat">—</div></div>
-        <div class="tele-box"><div class="tele-label">Cache</div><div class="tele-val c-ink" id="m-cache">—</div></div>
-        <div class="tele-box"><div class="tele-label">Provider</div><div class="tele-val c-green" id="m-prov">—</div></div>
-        <div class="tele-box"><div class="tele-label">Status</div><div class="tele-val c-ink" id="m-stat">—</div></div>
+      <div class="tele-row">
+        <div class="tele-cell">
+          <div class="tele-cell-label">Latency</div>
+          <div class="tele-cell-val c-sky" id="m-lat">—</div>
+        </div>
+        <div class="tele-cell">
+          <div class="tele-cell-label">Cache</div>
+          <div class="tele-cell-val c-ink2" id="m-cache">—</div>
+        </div>
+        <div class="tele-cell">
+          <div class="tele-cell-label">Provider</div>
+          <div class="tele-cell-val c-teal" id="m-prov">—</div>
+        </div>
+        <div class="tele-cell">
+          <div class="tele-cell-label">Status</div>
+          <div class="tele-cell-val c-ink2" id="m-stat">—</div>
+        </div>
       </div>
 
-      <div class="panel-head"><span class="label">Response</span></div>
-      <div class="output-box" id="resp-out">// Send a request to see the gateway response here…</div>
+      <div class="sec-label">response output</div>
+      <div class="output-box" id="resp-out">// Response will appear here after you send a request…</div>
+    </div>
+
+    <!-- MIDDLE: Live Metrics -->
+    <div class="card">
+      <div class="card-head">
+        <span class="sec-label">// active configuration</span>
+        <span class="sec-label" id="uptime-label" style="color:var(--ink3)">—</span>
+      </div>
+
+      <div class="metric-list" id="metrics-list">
+        <div class="metric-row">
+          <span class="metric-key">rate_limiter</span>
+          <span class="algo-tag tag-teal" id="m-rl">—</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">cache_engine</span>
+          <span class="algo-tag tag-sky" id="m-ce">—</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">router</span>
+          <span class="algo-tag tag-amber" id="m-rt">—</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">circuit_breaker</span>
+          <span class="algo-tag tag-emerald" id="m-cb-s">—</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">cache_entries</span>
+          <span class="metric-val c-teal" id="m-entries">—</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">providers_online</span>
+          <span class="metric-val c-emerald" id="m-providers">—</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">requests_sent</span>
+          <span class="metric-val c-sky" id="m-req-count">0</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">cache_hits</span>
+          <span class="metric-val c-emerald" id="m-hit-count">0</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">throttled</span>
+          <span class="metric-val c-rose" id="m-throttle-count">0</span>
+        </div>
+      </div>
     </div>
 
     <!-- RIGHT: Circuit Breakers -->
-    <div class="panel">
-      <div class="panel-head">
-        <span class="label">Circuit Breakers</span>
-        <button class="btn btn-ghost" onclick="resetAllBreakers()">Reset All</button>
+    <div class="card">
+      <div class="card-head">
+        <span class="sec-label">// circuit breakers</span>
+        <button class="btn btn-ghost" onclick="resetAllBreakers()">reset all</button>
       </div>
-      <div class="cb-stack" id="cb-container"></div>
+      <div class="cb-list" id="cb-container">
+        <div style="color:var(--ink3);font:400 11px 'IBM Plex Mono',monospace;">Loading providers…</div>
+      </div>
     </div>
   </div>
 
-  <!-- ===== FULL-WIDTH LOG ===== -->
-  <div class="log-panel">
-    <div class="panel-head">
-      <span class="label">Event Stream</span>
-      <button class="btn btn-ghost" onclick="clearLogs()">Clear</button>
-    </div>
-    <div class="log-box" id="log">
-      <div class="log-line"><span class="log-ts">[init]</span><span>Gateway connected — all subsystems operational.</span></div>
-    </div>
-  </div>
+  <!-- ═══ BOTTOM ROW ═══ -->
+  <div class="bottom-row">
 
-  <!-- ===== GUIDE ===== -->
-  <div class="guide-panel">
-    <span class="label">How to Test Each Algorithm</span>
-    <div class="guide-row">
-      <div class="guide-item">
-        <h4>Caching</h4>
-        <div class="steps">
-          <div class="step"><span class="step-n">1</span><span>Send <b>Original Query</b> — observe a <b>cache miss</b> (~50 ms).</span></div>
-          <div class="step"><span class="step-n">2</span><span>Send it again — instant <b>exact hit</b> (&lt;1 ms).</span></div>
-          <div class="step"><span class="step-n">3</span><span>Send <b>Paraphrased</b> — cosine similarity triggers a <b>semantic hit</b>.</span></div>
+    <!-- EVENT LOG -->
+    <div class="card">
+      <div class="card-head">
+        <span class="sec-label">// event stream</span>
+        <button class="btn btn-ghost" onclick="clearLogs()">clear</button>
+      </div>
+      <div class="log-box" id="log">
+        <div class="log-line">
+          <span class="log-ts">[init]</span>
+          <span class="log-tag t-info">[SYS]</span>
+          <span class="log-msg">Gateway connected — all subsystems operational.</span>
         </div>
       </div>
-      <div class="guide-item">
-        <h4>Rate Limiting</h4>
-        <div class="steps">
-          <div class="step"><span class="step-n">1</span><span>Click <b>15× Burst</b> — bucket allows 10, the rest get <b>429</b>.</span></div>
-          <div class="step"><span class="step-n">2</span><span>Switch to <b>Sliding Window Log</b> in the config bar to see strict timestamp-bounded enforcement.</span></div>
-        </div>
+    </div>
+
+    <!-- HOW TO TEST -->
+    <div class="card">
+      <div class="card-head">
+        <span class="sec-label">// how to test</span>
       </div>
-      <div class="guide-item">
-        <h4>Circuit Breaker & Failover</h4>
-        <div class="steps">
-          <div class="step"><span class="step-n">1</span><span>Click <b>Trip Outage</b> on mock-fast — state flips to <b style="color:var(--red)">OPEN</b>.</span></div>
-          <div class="step"><span class="step-n">2</span><span>Send a request — gateway auto-reroutes to <b>mock-slow</b> with zero downtime.</span></div>
+      <div class="guide-grid" style="grid-template-columns:1fr;">
+        <div class="guide-card">
+          <div class="guide-card-title"><span>⬡</span> Cache</div>
+          <div class="steps">
+            <div class="step"><span class="step-n">1</span><div class="step-text">Send <b>consistent hashing</b> preset → cache <b>MISS</b></div></div>
+            <div class="step"><span class="step-n">2</span><div class="step-text">Send it again → instant <b>EXACT hit</b></div></div>
+            <div class="step"><span class="step-n">3</span><div class="step-text">Send <b>paraphrase</b> preset → <b>SEMANTIC hit</b></div></div>
+          </div>
+        </div>
+        <div class="guide-card">
+          <div class="guide-card-title"><span>⧖</span> Rate Limiter</div>
+          <div class="steps">
+            <div class="step"><span class="step-n">1</span><div class="step-text">Click <b>Burst ×15</b> → 10 pass, 5 get <b>HTTP 429</b></div></div>
+            <div class="step"><span class="step-n">2</span><div class="step-text">Switch algorithm in config → apply → burst again</div></div>
+          </div>
+        </div>
+        <div class="guide-card">
+          <div class="guide-card-title"><span>◫</span> Circuit Breaker</div>
+          <div class="steps">
+            <div class="step"><span class="step-n">1</span><div class="step-text">Click <b>Trip</b> on mock-fast → state → <b>OPEN</b></div></div>
+            <div class="step"><span class="step-n">2</span><div class="step-text">Send request → auto-failover to <b>mock-slow</b></div></div>
+          </div>
         </div>
       </div>
     </div>
@@ -515,140 +673,211 @@
 </div>
 
 <script>
-function log(type, msg) {
-  const el = document.getElementById('log');
-  const d = document.createElement('div');
-  d.className = 'log-line';
-  const t = new Date().toLocaleTimeString('en-GB', {hour12:false});
-  const cls = {HIT:'t-hit',MISS:'t-miss',THROTTLE:'t-throttle',CB:'t-cb',RECONFIG:'t-miss',CACHE:'t-hit',REQ:'t-miss',ERR:'t-throttle'}[type]||'';
-  d.innerHTML = `<span class="log-ts">[${t}]</span><span class="${cls}">[${type}]</span><span>${msg}</span>`;
-  el.appendChild(d);
-  el.scrollTop = el.scrollHeight;
-}
+  let reqCount = 0, hitCount = 0, throttleCount = 0;
+  const startTime = Date.now();
 
-function clearLogs(){ document.getElementById('log').innerHTML = ''; }
-function setPrompt(t){ document.getElementById('prompt-input').value = t; }
-
-async function fetchHealth(){
-  try {
-    const r = await fetch('/health');
-    const d = await r.json();
-    if(d.active_rate_limiter) document.getElementById('sel-rl').value = d.active_rate_limiter;
-    if(d.active_cache) document.getElementById('sel-cache').value = d.active_cache;
-    if(d.active_router) document.getElementById('sel-router').value = d.active_router;
-
-    const c = document.getElementById('cb-container');
-    c.innerHTML = '';
-    for(const [pid, state] of Object.entries(d.circuit_breaker_states)){
-      const cls = state==='CLOSED'?'pill-closed':state==='OPEN'?'pill-open':'pill-half';
-      const lat = pid.includes('fast')?'50 ms':'300 ms';
-      c.innerHTML += `
-        <div class="cb-card">
-          <div class="cb-top">
-            <span class="cb-name">${pid} <span style="font-weight:400;color:var(--ink3);font-size:11px">(${lat})</span></span>
-            <span class="pill ${cls}">${state}</span>
-          </div>
-          <div class="cb-btns">
-            <button class="cb-btn cb-trip" onclick="tripBreaker('${pid}')">Trip Outage</button>
-            <button class="cb-btn cb-reset" onclick="resetAllBreakers()">Restore</button>
-          </div>
-        </div>`;
-    }
-  } catch(e){ log('ERR','Health fetch failed: '+e); }
-}
-
-async function applyDynamicConfig(){
-  const body = {
-    rate_limiter_strategy: document.getElementById('sel-rl').value,
-    cache_strategy: document.getElementById('sel-cache').value,
-    router_strategy: document.getElementById('sel-router').value,
-    circuit_breaker_strategy: document.getElementById('sel-cb').value,
-  };
-  try {
-    const r = await fetch('/gateway/reconfigure',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    const d = await r.json();
-    log('RECONFIG',`Limiter=${d.active_rate_limiter}  Cache=${d.active_cache}  Router=${d.active_router}`);
-    fetchHealth();
-  } catch(e){ log('ERR','Reconfigure failed: '+e); }
-}
-
-async function tripBreaker(pid){
-  log('CB',`Tripping ${pid}…`);
-  try {
-    const r = await fetch(`/gateway/circuit-breaker/trip?provider_id=${pid}`,{method:'POST'});
-    const d = await r.json();
-    log('CB',`${pid} → ${d.new_state}`);
-    fetchHealth();
-  } catch(e){ log('ERR','Trip failed: '+e); }
-}
-
-async function resetAllBreakers(){
-  try {
-    await fetch('/gateway/circuit-breaker/reset',{method:'POST'});
-    log('CB','All breakers reset to CLOSED.');
-    fetchHealth();
-  } catch(e){ log('ERR','Reset failed: '+e); }
-}
-
-async function clearCache(){
-  try { await fetch('/gateway/cache/clear',{method:'POST'}); log('CACHE','Cache purged.'); }
-  catch(e){ log('ERR','Cache clear failed: '+e); }
-}
-
-async function sendPrompt(){
-  const prompt = document.getElementById('prompt-input').value.trim();
-  if(!prompt) return;
-  log('REQ',`"${prompt.substring(0,50)}…"`);
-  const t0 = performance.now();
-  try {
-    const r = await fetch('/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:prompt}],tenant_id:'playground'})});
-    const ms = (performance.now()-t0).toFixed(1);
-    const d = await r.json();
-
-    document.getElementById('m-lat').textContent = ms+' ms';
-    document.getElementById('m-stat').textContent = r.status;
-    document.getElementById('m-stat').className = 'tele-val '+(r.status===200?'c-green':'c-red');
-
-    if(r.status===200){
-      const hit = d.cache_hit;
-      const ct = d.cache_type||'';
-      const ce = document.getElementById('m-cache');
-      if(hit){
-        ce.textContent = 'HIT ('+ct+')'; ce.className='tele-val c-green';
-        document.getElementById('m-lat').className='tele-val c-green';
-        log('HIT',`${ct} in ${ms} ms`);
-      } else {
-        ce.textContent = 'MISS'; ce.className='tele-val c-amber';
-        document.getElementById('m-lat').className='tele-val c-blue';
-        log('MISS',`→ ${d.provider_id} in ${ms} ms`);
-      }
-      document.getElementById('m-prov').textContent = d.provider_id||'cache';
-      document.getElementById('resp-out').textContent = JSON.stringify(d,null,2);
-    } else {
-      document.getElementById('m-cache').textContent='429'; document.getElementById('m-cache').className='tele-val c-red';
-      document.getElementById('resp-out').textContent = JSON.stringify(d,null,2);
-      log('THROTTLE',`HTTP ${r.status}: ${d.detail}`);
-    }
-    fetchHealth();
-  } catch(e){ log('ERR','Network: '+e); }
-}
-
-async function triggerBurst(){
-  log('THROTTLE','Firing 15 concurrent requests…');
-  let ok=0, fail=0;
-  const promises = [];
-  for(let i=0;i<15;i++){
-    promises.push(
-      fetch('/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:'burst '+i}],tenant_id:'burst',cache_bypass:true})})
-      .then(r=>{ if(r.status===200) ok++; else fail++; })
-    );
+  function ts() {
+    return new Date().toLocaleTimeString('en-GB', { hour12: false });
   }
-  await Promise.allSettled(promises);
-  document.getElementById('m-stat').textContent = `${ok} ok / ${fail} 429`;
-  log('THROTTLE',`Done: ${ok} passed, ${fail} throttled.`);
-}
 
-resetAllBreakers();
+  function log(type, msg) {
+    const el = document.getElementById('log');
+    const d = document.createElement('div');
+    d.className = 'log-line';
+    const tagMap = {
+      HIT: ['t-hit', 'HIT'],
+      MISS: ['t-miss', 'MISS'],
+      THROTTLE: ['t-throttle', '429'],
+      CB: ['t-cb', 'CB'],
+      CFG: ['t-cfg', 'CFG'],
+      ERR: ['t-err', 'ERR'],
+      SYS: ['t-info', 'SYS'],
+    };
+    const [cls, label] = tagMap[type] || ['t-info', type];
+    d.innerHTML = `<span class="log-ts">[${ts()}]</span><span class="log-tag ${cls}">[${label}]</span><span class="log-msg"> ${msg}</span>`;
+    el.appendChild(d);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function clearLogs() { document.getElementById('log').innerHTML = ''; }
+  function setPrompt(t) { document.getElementById('prompt-input').value = t; }
+
+  function updateUptime() {
+    const s = Math.floor((Date.now() - startTime) / 1000);
+    const m = Math.floor(s / 60), sec = s % 60;
+    document.getElementById('uptime-label').textContent = `uptime ${m}m ${sec}s`;
+  }
+  setInterval(updateUptime, 1000);
+
+  async function fetchHealth() {
+    try {
+      const r = await fetch('/health');
+      const d = await r.json();
+
+      // sync selects
+      if (d.active_rate_limiter) document.getElementById('sel-rl').value    = d.active_rate_limiter;
+      if (d.active_cache)        document.getElementById('sel-cache').value = d.active_cache;
+      if (d.active_router)       document.getElementById('sel-router').value = d.active_router;
+
+      // metric tags
+      document.getElementById('m-rl').textContent      = d.active_rate_limiter  || '—';
+      document.getElementById('m-ce').textContent      = d.active_cache         || '—';
+      document.getElementById('m-rt').textContent      = d.active_router        || '—';
+      document.getElementById('m-entries').textContent = d.cache_entries_count  ?? '—';
+      document.getElementById('m-providers').textContent = (d.providers_configured || []).length;
+
+      // build CB cards
+      const c = document.getElementById('cb-container');
+      c.innerHTML = '';
+      for (const [pid, state] of Object.entries(d.circuit_breaker_states || {})) {
+        const pillCls = state === 'CLOSED' ? 'pill-closed' : state === 'OPEN' ? 'pill-open' : 'pill-half';
+        const latLabel = pid.includes('fast') ? '50ms simulated' : '300ms simulated';
+        c.innerHTML += `
+          <div class="cb-item">
+            <div class="cb-item-head">
+              <div>
+                <div class="cb-item-name">${pid}</div>
+                <div class="cb-item-sub">${latLabel}</div>
+              </div>
+              <span class="pill ${pillCls}">${state}</span>
+            </div>
+            <div class="cb-actions">
+              <button class="cb-btn cb-trip"    onclick="tripBreaker('${pid}')">Trip Outage</button>
+              <button class="cb-btn cb-restore" onclick="resetAllBreakers()">Restore</button>
+            </div>
+          </div>`;
+      }
+    } catch (e) {
+      log('ERR', 'Health fetch failed: ' + e);
+    }
+  }
+
+  async function applyDynamicConfig() {
+    const body = {
+      rate_limiter_strategy:    document.getElementById('sel-rl').value,
+      cache_strategy:           document.getElementById('sel-cache').value,
+      router_strategy:          document.getElementById('sel-router').value,
+      circuit_breaker_strategy: document.getElementById('sel-cb').value,
+    };
+    try {
+      const r = await fetch('/gateway/reconfigure', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      document.getElementById('m-cb-s').textContent = body.circuit_breaker_strategy;
+      log('CFG', `RL=${d.active_rate_limiter}  Cache=${d.active_cache}  Router=${d.active_router}`);
+      fetchHealth();
+    } catch (e) { log('ERR', 'Reconfigure failed: ' + e); }
+  }
+
+  async function tripBreaker(pid) {
+    log('CB', `Tripping ${pid}…`);
+    try {
+      const r = await fetch(`/gateway/circuit-breaker/trip?provider_id=${pid}`, { method: 'POST' });
+      const d = await r.json();
+      log('CB', `${pid} → ${d.new_state}`);
+      fetchHealth();
+    } catch (e) { log('ERR', 'Trip failed: ' + e); }
+  }
+
+  async function resetAllBreakers() {
+    try {
+      await fetch('/gateway/circuit-breaker/reset', { method: 'POST' });
+      log('CB', 'All circuit breakers reset → CLOSED');
+      fetchHealth();
+    } catch (e) { log('ERR', 'Reset failed: ' + e); }
+  }
+
+  async function clearCache() {
+    try {
+      await fetch('/gateway/cache/clear', { method: 'POST' });
+      log('SYS', 'Cache purged successfully.');
+      fetchHealth();
+    } catch (e) { log('ERR', 'Cache clear failed: ' + e); }
+  }
+
+  async function sendPrompt() {
+    const prompt = document.getElementById('prompt-input').value.trim();
+    if (!prompt) return;
+    reqCount++;
+    document.getElementById('m-req-count').textContent = reqCount;
+    log('MISS', `"${prompt.substring(0, 55)}${prompt.length > 55 ? '…' : ''}"`);
+    const t0 = performance.now();
+    try {
+      const r = await fetch('/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], tenant_id: 'playground' }),
+      });
+      const ms = (performance.now() - t0).toFixed(1);
+      const d = await r.json();
+
+      document.getElementById('m-lat').textContent = ms + ' ms';
+      document.getElementById('m-stat').textContent = r.status;
+      document.getElementById('m-stat').className = 'tele-cell-val ' + (r.status === 200 ? 'c-emerald' : 'c-rose');
+
+      if (r.status === 200) {
+        const hit = d.cache_hit;
+        const ct  = d.cache_type || '';
+        const ce  = document.getElementById('m-cache');
+        if (hit) {
+          hitCount++;
+          document.getElementById('m-hit-count').textContent = hitCount;
+          ce.textContent  = ct;
+          ce.className    = 'tele-cell-val c-emerald';
+          document.getElementById('m-lat').className = 'tele-cell-val c-emerald';
+          log('HIT', `${ct} hit in ${ms} ms — no LLM call made`);
+        } else {
+          ce.textContent = 'MISS';
+          ce.className   = 'tele-cell-val c-amber';
+          document.getElementById('m-lat').className = 'tele-cell-val c-sky';
+          log('MISS', `→ ${d.provider_id} responded in ${ms} ms`);
+        }
+        document.getElementById('m-prov').textContent = d.provider_id || 'cache';
+        document.getElementById('resp-out').textContent = JSON.stringify(d, null, 2);
+      } else {
+        throttleCount++;
+        document.getElementById('m-throttle-count').textContent = throttleCount;
+        document.getElementById('m-cache').textContent = 'N/A';
+        document.getElementById('m-cache').className   = 'tele-cell-val c-rose';
+        document.getElementById('resp-out').textContent = JSON.stringify(d, null, 2);
+        log('THROTTLE', `HTTP ${r.status} — ${d.detail}`);
+      }
+      fetchHealth();
+    } catch (e) { log('ERR', 'Network error: ' + e); }
+  }
+
+  async function triggerBurst() {
+    log('THROTTLE', 'Firing 15 concurrent requests…');
+    let ok = 0, fail = 0;
+    const promises = [];
+    for (let i = 0; i < 15; i++) {
+      promises.push(
+        fetch('/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [{ role: 'user', content: 'burst test ' + i }],
+            tenant_id: 'burst_tester',
+            cache_bypass: true,
+          }),
+        }).then(r => { r.status === 200 ? ok++ : fail++; })
+      );
+    }
+    await Promise.allSettled(promises);
+    throttleCount += fail;
+    reqCount += 15;
+    document.getElementById('m-req-count').textContent     = reqCount;
+    document.getElementById('m-throttle-count').textContent = throttleCount;
+    document.getElementById('m-stat').textContent = `${ok} ok`;
+    document.getElementById('m-stat').className   = 'tele-cell-val c-emerald';
+    log('THROTTLE', `Burst done — ${ok} passed, ${fail} throttled (HTTP 429)`);
+  }
+
+  // bootstrap
+  fetchHealth();
+  setInterval(fetchHealth, 8000);
 </script>
 </body>
 </html>
